@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jump")]
     public float jumpForce = 14f;
     public int maxJumps = 2;
+    float doubleJumpTimer;
 
     [Header("Wall Slide")]
     public float wallSlideSpeed = 2f;
@@ -25,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
 
     Rigidbody2D rb;
     SpriteRenderer sr;
+    Animator animator;
 
     float moveInput;
 
@@ -32,10 +35,13 @@ public class PlayerMovement : MonoBehaviour
     bool isTouchingWall;
     bool isWallSliding;
 
+    bool doubleJumpTriggered;
+
     int jumpsRemaining;
 
     void Start()
     {
+        animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
 
@@ -51,6 +57,12 @@ public class PlayerMovement : MonoBehaviour
 
         HandleJump();
         HandleWallSlide();
+
+        if (doubleJumpTimer > 0)
+        {
+            doubleJumpTimer -= Time.deltaTime;
+        }
+        HandleAnimations();
         Flip();
     }
 
@@ -61,7 +73,10 @@ public class PlayerMovement : MonoBehaviour
 
     void Move()
     {
-        rb.linearVelocity = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(
+            moveInput * moveSpeed,
+            rb.linearVelocity.y
+        );
     }
 
     void HandleJump()
@@ -78,7 +93,10 @@ public class PlayerMovement : MonoBehaviour
             {
                 float direction = -Mathf.Sign(transform.localScale.x);
 
-                rb.linearVelocity = new Vector2(direction * wallJumpForceX, wallJumpForceY);
+                rb.linearVelocity = new Vector2(
+                    direction * wallJumpForceX,
+                    wallJumpForceY
+                );
 
                 return;
             }
@@ -86,9 +104,21 @@ public class PlayerMovement : MonoBehaviour
             // normal jump
             if (jumpsRemaining > 0)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                rb.linearVelocity = new Vector2(
+                    rb.linearVelocity.x,
+                    jumpForce
+                );
 
-                jumpsRemaining = Mathf.Max(jumpsRemaining - 1, 0);
+                // double jump
+                if (!isGrounded && jumpsRemaining == 1)
+                {
+                    doubleJumpTimer = 0.2f;
+                }
+
+                jumpsRemaining = Mathf.Max(
+                    jumpsRemaining - 1,
+                    0
+                );
             }
         }
     }
@@ -105,11 +135,53 @@ public class PlayerMovement : MonoBehaviour
 
             if (rb.linearVelocity.y < -wallSlideSpeed)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
+                rb.linearVelocity = new Vector2(
+                    rb.linearVelocity.x,
+                    -wallSlideSpeed
+                );
             }
         }
+    }
 
-        
+    void HandleAnimations()
+    {
+        // wall slide
+        if (isWallSliding)
+        {
+            animator.Play("player_wall_slide");
+            return;
+        }
+
+        // double jump
+        if (doubleJumpTimer > 0)
+        {
+            animator.Play("player_double_jump");
+            return;
+        }
+
+        // jump
+        if (!isGrounded && rb.linearVelocity.y > 0.1f)
+        {
+            animator.Play("player_jump");
+            return;
+        }
+
+        // fall
+        if (!isGrounded && rb.linearVelocity.y < -0.1f)
+        {
+            animator.Play("player_fall");
+            return;
+        }
+
+        // run
+        if (Mathf.Abs(moveInput) > 0.1f)
+        {
+            animator.Play("player_run");
+            return;
+        }
+
+        // idle
+        animator.Play("player_idle");
     }
 
     void CheckGround()
@@ -123,7 +195,10 @@ public class PlayerMovement : MonoBehaviour
 
     void CheckWall()
     {
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        Vector2 direction =
+            transform.localScale.x > 0
+            ? Vector2.right
+            : Vector2.left;
 
         isTouchingWall = Physics2D.Raycast(
             wallCheck.position,
@@ -149,6 +224,24 @@ public class PlayerMovement : MonoBehaviour
         transform.localScale = scale;
     }
 
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (
+            other.CompareTag("Enemy") ||
+            other.CompareTag("Hazard")
+        )
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().buildIndex
+        );
+    }
+
     void OnDrawGizmosSelected()
     {
         if (groundCheck != null)
@@ -167,10 +260,7 @@ public class PlayerMovement : MonoBehaviour
 
             Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
 
-            Gizmos.DrawLine(
-                wallCheck.position,
-                wallCheck.position + (Vector3)(direction * wallCheckDistance)
-            );
+            Gizmos.DrawLine( wallCheck.position, wallCheck.position + (Vector3)(direction * wallCheckDistance));
         }
     }
 }
