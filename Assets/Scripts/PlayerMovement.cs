@@ -28,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
     Rigidbody2D rb;
     SpriteRenderer sr;
     Animator animator;
+    DeathMenu deathMenu;
 
     float moveInput;
 
@@ -38,12 +39,16 @@ public class PlayerMovement : MonoBehaviour
     bool doubleJumpTriggered;
 
     int jumpsRemaining;
+    public AudioClip jumpSound;
+
 
     void Start()
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
+        deathMenu = FindFirstObjectByType<DeathMenu>();
+      
 
         jumpsRemaining = maxJumps;
     }
@@ -108,7 +113,8 @@ public class PlayerMovement : MonoBehaviour
                     rb.linearVelocity.x,
                     jumpForce
                 );
-
+                
+                AudioSource.PlayClipAtPoint(jumpSound, transform.position);
                 // double jump
                 if (!isGrounded && jumpsRemaining == 1)
                 {
@@ -237,9 +243,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Die()
     {
-        SceneManager.LoadScene(
-            SceneManager.GetActiveScene().buildIndex
-        );
+        deathMenu.ShowDeathMenu();
     }
 
     void OnDrawGizmosSelected()

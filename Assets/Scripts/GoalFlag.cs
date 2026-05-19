@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 public class GoalFlag : MonoBehaviour
 {
     Animator animator;
+    public GameObject canvas;
     void Start()
     {
         animator = GetComponent<Animator>();
@@ -18,11 +19,14 @@ public class GoalFlag : MonoBehaviour
     }
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (
-            other.CompareTag("Player") &&
-            GameManager.Instance.HasEnoughApples()
-        )
+        if (other.CompareTag("Player") && GameManager.Instance.HasEnoughApples())
         {
+            if(GameManager.Instance.apples >= 30)
+            {
+                canvas.GetComponent<WinMenu>().ShowWinMenu();
+                return;
+            }
+                
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
         }
     }

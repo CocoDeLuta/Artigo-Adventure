@@ -11,6 +11,7 @@ public class Turret : MonoBehaviour
     float timer;
 
     Animator anim;
+    public AudioClip shootSound;
 
     void Start()
     {
@@ -38,6 +39,7 @@ public class Turret : MonoBehaviour
     void Shoot()
     {
         anim.Play("enemy_turret_shoot");
+        AudioSource.PlayClipAtPoint(shootSound, transform.position);
     }
 
     public void SpawnBullet()

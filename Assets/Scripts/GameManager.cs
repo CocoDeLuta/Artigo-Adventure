@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
     public int apples;
     public int requiredApples = 10;
 
+
+
     void Awake()
     {
         if (Instance == null)
@@ -17,6 +19,8 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        
     }
 
     public void AddApple()
